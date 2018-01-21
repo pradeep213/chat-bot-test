@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">ChatBotApp</string>
+    <string name="text_hint">Type your message here...</string>
+    <string name="no_msgs">No messages yet. Start chatting...</string>
+
+    <string name="something_went_wrong">Something went wrong!! Please try again.</string>
+    <string name="empty_message">Please type something to send.</string>
+    <string name="send_text">Send</string>
 </resources>
