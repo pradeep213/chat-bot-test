@@ -1,14 +1,13 @@
 package chatbot.example.com.chatbotapp;
 
 import android.os.Bundle;
-import android.os.PersistableBundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.text.Layout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +16,15 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -26,7 +34,7 @@ import java.util.ArrayList;
  * Created by pradeepsakthi on 21/01/18.
  */
 
-public class ChatScreen extends AppCompatActivity implements ViewInterface, View.OnClickListener {
+public class ChatScreen extends AppCompatActivity implements ViewInterface, View.OnClickListener, ValueEventListener {
 
     Toolbar toolbar;
     RecyclerView chatList;
@@ -38,6 +46,9 @@ public class ChatScreen extends AppCompatActivity implements ViewInterface, View
     TextView noMessage;
     String ARG_DATA = "data";
     ImageView backButton;
+    DatabaseReference myReference;
+    FirebaseAuth mAuth;
+    FirebaseUser currentUser;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -80,6 +91,26 @@ public class ChatScreen extends AppCompatActivity implements ViewInterface, View
     @Override
     protected void onStart() {
         super.onStart();
+        mAuth = FirebaseAuth.getInstance();
+        if (mAuth == null || mAuth.getCurrentUser() == null) {
+            mAuth.signInAnonymously()
+                    .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<AuthResult> task) {
+                            if (task.isSuccessful()) {
+                                // Sign in success, update UI with the signed-in user's information
+                                currentUser = mAuth.getCurrentUser();
+                                myReference = App.getFirebaseDatabase().getReference();
+                                myReference.addValueEventListener(ChatScreen.this);
+                            }
+                            // ...
+                        }
+                    });
+        }else{
+            currentUser = mAuth.getCurrentUser();
+            myReference = App.getFirebaseDatabase().getReference();
+            myReference.addValueEventListener(ChatScreen.this);
+        }
     }
 
     @Override
@@ -90,6 +121,11 @@ public class ChatScreen extends AppCompatActivity implements ViewInterface, View
     @Override
     protected void onStop() {
         super.onStop();
+        if (myReference != null && data != null && data.size() > 0) {
+            FirebaseDataModel finalData = new FirebaseDataModel();
+            finalData.setMessageDataList(data);
+            myReference.setValue(finalData);
+        }
     }
 
     @Override
@@ -105,7 +141,7 @@ public class ChatScreen extends AppCompatActivity implements ViewInterface, View
         if (data != null) {
             if (this.data == null)
                 this.data = new ArrayList<>();
-            this.data.add(data);
+            this.data.add(0, data);
             noMessage.setVisibility(View.GONE);
             chatList.setVisibility(View.VISIBLE);
             adapter.notifyDataSetChanged();
@@ -149,12 +185,34 @@ public class ChatScreen extends AppCompatActivity implements ViewInterface, View
         if (data == null) {
             data = new ArrayList<>();
         }
-        data.add(userMessageModel);
+        data.add(0, userMessageModel);
         noMessage.setVisibility(View.GONE);
         chatList.setVisibility(View.VISIBLE);
         userMessage.getText().clear();
         adapter.notifyDataSetChanged();
 
+
+    }
+
+    @Override
+    public void onDataChange(DataSnapshot dataSnapshot) {
+        FirebaseDataModel value = dataSnapshot.getValue(FirebaseDataModel.class);
+        if (value != null) {
+            data = value.getMessageDataList();
+            noMessage.setVisibility(View.GONE);
+            chatList.setVisibility(View.VISIBLE);
+            if (adapter == null)
+                chatList.setAdapter(adapter);
+            adapter.notifyDataSetChanged();
+        }else{
+            noMessage.setVisibility(View.VISIBLE);
+            chatList.setVisibility(View.GONE);
+
+        }
+    }
+
+    @Override
+    public void onCancelled(DatabaseError databaseError) {
 
     }
 
@@ -204,4 +262,5 @@ public class ChatScreen extends AppCompatActivity implements ViewInterface, View
 
 
     }
+
 }
