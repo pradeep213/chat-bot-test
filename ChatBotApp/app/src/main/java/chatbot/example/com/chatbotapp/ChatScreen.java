@@ -62,6 +62,7 @@ public class ChatScreen extends AppCompatActivity implements ViewInterface, View
             }.getType());
             if (data != null && data.size() > 0) {
                 adapter.notifyDataSetChanged();
+                chatList.smoothScrollToPosition(data.size()-1);
             }
         }
     }
@@ -141,10 +142,11 @@ public class ChatScreen extends AppCompatActivity implements ViewInterface, View
         if (data != null) {
             if (this.data == null)
                 this.data = new ArrayList<>();
-            this.data.add(0, data);
+            this.data.add(data);
             noMessage.setVisibility(View.GONE);
             chatList.setVisibility(View.VISIBLE);
             adapter.notifyDataSetChanged();
+            chatList.smoothScrollToPosition(this.data.size()-1);
         }
     }
 
@@ -185,13 +187,12 @@ public class ChatScreen extends AppCompatActivity implements ViewInterface, View
         if (data == null) {
             data = new ArrayList<>();
         }
-        data.add(0, userMessageModel);
+        data.add(userMessageModel);
         noMessage.setVisibility(View.GONE);
         chatList.setVisibility(View.VISIBLE);
         userMessage.getText().clear();
         adapter.notifyDataSetChanged();
-
-
+        chatList.smoothScrollToPosition(data.size()-1);
     }
 
     @Override
@@ -204,6 +205,7 @@ public class ChatScreen extends AppCompatActivity implements ViewInterface, View
             if (adapter == null)
                 chatList.setAdapter(adapter);
             adapter.notifyDataSetChanged();
+            chatList.smoothScrollToPosition(data.size()-1);
         }else{
             noMessage.setVisibility(View.VISIBLE);
             chatList.setVisibility(View.GONE);
